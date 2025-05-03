@@ -1,0 +1,107 @@
+### ✅ Example: Functional Coverage of a Packet
+
+#### 🎯 Goal:
+
+Track:
+
+* Packet `type` (control, data, error)
+* Packet `priority` (low, medium, high)
+* Combinations of type × priority
+* Size ranges: small, medium, large
+
+---
+
+### **SystemVerilog Code**
+
+#### 1. **Packet Class with Covergroup**
+
+```systemverilog
+class Packet;
+
+    // Random fields
+    rand bit [3:0] size;       // 0-15
+    rand bit [1:0] type;       // 0=control, 1=data, 2=error
+    rand bit [1:0] priority;   // 0=low, 1=medium, 2=high
+
+    // Covergroup to track functional coverage
+    covergroup packet_cg;
+
+        // Track packet type
+        coverpoint type {
+            bins control = {0};
+            bins data    = {1};
+            bins error   = {2};
+        }
+
+        // Track packet size ranges
+        coverpoint size {
+            bins small  = {[0:5]};
+            bins medium = {[6:10]};
+            bins large  = {[11:15]};
+        }
+
+        // Track packet priority
+        coverpoint priority {
+            bins low    = {0};
+            bins medium = {1};
+            bins high   = {2};
+        }
+
+        // Cross coverage: type × priority
+        cross type, priority;
+
+    endgroup
+
+    // Constructor to instantiate the covergroup
+    function new();
+        packet_cg = new();
+    endfunction
+
+    // Sample current values
+    function void sample();
+        packet_cg.sample();
+    endfunction
+
+endclass
+```
+
+---
+
+#### 2. **Testbench to Randomize and Sample**
+
+```systemverilog
+module tb;
+
+    Packet pkt;
+
+    initial begin
+        pkt = new();
+
+        // Generate and sample 50 packets
+        repeat (50) begin
+            if (pkt.randomize()) begin
+                $display("Packet => Type: %0d, Size: %0d, Priority: %0d",
+                         pkt.type, pkt.size, pkt.priority);
+                pkt.sample();  // Collect coverage
+            end else begin
+                $display("Randomization failed.");
+            end
+        end
+
+        $display("Simulation complete. Check coverage report.");
+    end
+
+endmodule
+```
+
+---
+
+### 📌 Summary
+
+This example:
+
+* Randomizes packet fields (`type`, `priority`, `size`)
+* Defines a **covergroup** with **coverpoints** and **cross coverage**
+* Collects coverage using `.sample()`
+* Can be extended with constraints or conditional sampling
+
